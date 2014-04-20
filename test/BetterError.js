@@ -1,13 +1,22 @@
+var st = require('stack-trace');
+var path = require('path');
+var fs = require('fs');
 var BetterError = require('../');
 var should = require('should');
 require('mocha');
 
+var fixtures = path.join(__dirname, './fixtures');
+
+var sampleStack = fs.readFileSync(path.join(fixtures, 'stack.txt'), 'utf8');
+var sampleError = new BetterError({stack: sampleStack});
+var parsedStack = st.parse(sampleError);
+
 describe('BetterError()', function() {
-  it('should contain a stack and name when constructed with no arguments', function(done){
+  it('should contain callSites and name when constructed with no arguments', function(done){
     var err = new BetterError();
-    should.exist(err.stack);
+    should.exist(err.callSites);
     should.exist(err.name);
-    (typeof(err.stack)).should.equal('string');
+    err.callSites.length.should.not.equal(0);
     err.name.should.equal('Error');
     done();
   });
@@ -16,12 +25,12 @@ describe('BetterError()', function() {
 describe('BetterError(opt)', function() {
   it('should absorb options when constructed with object argument', function(done){
     var err = new BetterError({
-      stack: 'steve brule',
+      stack: sampleStack,
       message: 'yo',
       stuff: 'test'
     });
-    should.exist(err.stack);
-    err.stack.should.equal('steve brule');
+    should.exist(err.callSites);
+    err.callSites.should.eql(parsedStack);
     should.exist(err.message);
     err.message.should.equal('yo');
     should.exist(err.options.stuff);

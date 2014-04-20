@@ -1,9 +1,11 @@
+var st = require('stack-trace');
 var util = require('util');
 var toArray = require('to-array');
 var clone = require('lodash.clone');
 var defaults = require('lodash.defaults');
 
 var attachStack = function(err){
+  err.callsites = 
   Error.captureStackTrace(err, BetterError);
   return err;
 };
@@ -76,8 +78,8 @@ function BetterError(){
   // absorb in our standard Error class keys
   absorb(this.options, this, errKeys);
 
-  // default to capture a new stacktrace
-  if (!this.stack) attachStack(this);
+  // capture detailed callsite info
+  this.callSites = this.stack ? st.parse(this) : st.get(BetterError);
 }
 
 util.inherits(BetterError, Error);

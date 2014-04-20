@@ -1,0 +1,20 @@
+[
+  {
+    "fileName":"/Users/contra/Projects/old-crufty-web-lulz/other-file.js",
+    "lineNumber":2,
+    "functionName":"woah",
+    "typeName":"Object",
+    "methodName":null,
+    "columnNumber":9,
+    "native":false
+  },
+  {
+    "fileName":"/Users/contra/Projects/old-crufty-web-lulz/sample.js",
+    "lineNumber":3,
+    "functionName":"",
+    "typeName":"Object",
+    "methodName":null,
+    "columnNumber":1,
+    "native":false
+  }
+]
