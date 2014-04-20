@@ -1,0 +1,41 @@
+{
+  "name": "BetterError",
+  "description": "A better and more configurable Error class",
+  "version": "0.0.1",
+  "homepage": "http://github.com/wearefractal/BetterError",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/wearefractal/BetterError.git"
+  },
+  "author": "Fractal <contact@wearefractal.com> (http://wearefractal.com/)",
+  "main": "./index.js",
+  "dependencies": {
+    "chalk": "^0.4.0",
+    "lodash.clone": "^2.4.1",
+    "lodash.defaults": "^2.4.1",
+    "stack-trace": "0.0.9",
+    "to-array": "^0.1.4"
+  },
+  "devDependencies": {
+    "mocha": "^1.17.0",
+    "should": "^3.1.0",
+    "mocha-lcov-reporter": "^0.0.1",
+    "coveralls": "^2.6.1",
+    "istanbul": "^0.2.3",
+    "rimraf": "^2.2.5",
+    "jshint": "^2.4.1"
+  },
+  "scripts": {
+    "test": "mocha --reporter spec && jshint",
+    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
+  },
+  "engines": {
+    "node": ">= 0.9"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/wearefractal/BetterError/raw/master/LICENSE"
+    }
+  ]
+}
