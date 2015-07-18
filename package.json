@@ -1,41 +1,34 @@
 {
-  "name": "BetterError",
-  "description": "A better and more configurable Error class",
+  "name": "bettererror",
   "version": "0.0.1",
-  "homepage": "http://github.com/wearefractal/BetterError",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/wearefractal/BetterError.git"
-  },
+  "description": "A better and more configurable Error class",
+  "repository": "wearefractal/BetterError",
+  "license": "MIT",
   "author": "Fractal <contact@wearefractal.com> (http://wearefractal.com/)",
-  "main": "./index.js",
+  "engines": {
+    "node": ">= 0.10"
+  },
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "test": "jshint && mocha",
+    "coverage": "istanbul cover _mocha --report lcovonly",
+    "coveralls": "${npm_run_script_coverage} && istanbul-coveralls"
+  },
   "dependencies": {
-    "chalk": "^0.4.0",
-    "lodash.clone": "^2.4.1",
-    "lodash.defaults": "^2.4.1",
-    "stack-trace": "0.0.9",
-    "to-array": "^0.1.4"
+    "array-differ": "^1.0.0",
+    "array-uniq": "^1.0.2",
+    "chalk": "^1.1.0",
+    "object-assign": "^3.0.0"
   },
   "devDependencies": {
-    "mocha": "^1.17.0",
-    "should": "^3.1.0",
+    "mocha": "^2.2.5",
+    "should": "^7.0.2",
     "mocha-lcov-reporter": "^0.0.1",
-    "coveralls": "^2.6.1",
-    "istanbul": "^0.2.3",
-    "rimraf": "^2.2.5",
-    "jshint": "^2.4.1"
-  },
-  "scripts": {
-    "test": "mocha --reporter spec && jshint",
-    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage"
-  },
-  "engines": {
-    "node": ">= 0.9"
-  },
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "http://github.com/wearefractal/BetterError/raw/master/LICENSE"
-    }
-  ]
+    "coveralls": "^2.11.3",
+    "istanbul": "^0.3.17",
+    "rimraf": "^2.4.1",
+    "jshint": "^2.8.0"
+  }
 }

@@ -1,87 +1,130 @@
-var st = require('stack-trace');
 var util = require('util');
-var toArray = require('to-array');
-var clone = require('lodash.clone');
-var defaults = require('lodash.defaults');
+var arrayDiffer = require('array-differ');
+var arrayUniq = require('array-uniq');
+var chalk = require('chalk');
+var objectAssign = require('object-assign');
 
-var attachStack = function(err){
-  err.callsites = 
-  Error.captureStackTrace(err, BetterError);
-  return err;
-};
+var nonEnumberableProperties = ['name', 'message', 'stack'];
+var propertiesNotToDisplay = nonEnumberableProperties.concat(['plugin', 'showStack', 'showProperties', '__safety', '_stack']);
 
-var formatOptions = function(args) {
-  if (args.length === 0) return {};
-  var cloned;
-
-  if (args.length === 1){
-    // formatOptions(opt)
-    if (typeof args[0] === 'object') {
-      cloned = clone(args[0]);
-      return cloned;
+// wow what a clusterfuck
+var parseOptions = function(plugin, message, opt) {
+  opt = opt || {};
+  if (typeof plugin === 'object') {
+    opt = plugin;
+  } else {
+    if (message instanceof Error) {
+      opt.error = message;
+    } else if (typeof message === 'object') {
+      opt = message;
+    } else {
+      opt.message = message;
     }
-
-    // formatOptions(message)
-    if (typeof args[0] === 'string') {
-      return {
-        message: args[0]
-      };
-    }
+    opt.plugin = plugin;
   }
 
-  if (args.length === 2){
-    // formatOptions(source, message)
-    if (typeof args[0] === 'string' && typeof args[1] === 'string') {
-      return {
-        source: args[0],
-        message: args[1]
-      };
-    }
-
-    // formatOptions(source, options)
-    if (typeof args[0] === 'string' && typeof args[1] === 'object') {
-      cloned = clone(args[1]);
-      cloned.source = args[0];
-      return cloned;
-    }
-  }
-
+  return objectAssign({
+    showStack: false,
+    showProperties: true
+  }, opt);
 };
 
-var absorb = function(src, dest, keys) {
-  keys.forEach(function(k){
-    dest[k] = src[k];
-    delete src[k];
-  });
-};
+function PluginError(plugin, message, opt) {
+  if (!(this instanceof PluginError)) throw new Error('Call PluginError using new');
 
-var errKeys = [
-  'message','stack','name',
-  'fileName','lineNumber','columnNumber'
-];
-
-var defaultOptions = {
-  name: 'Error'
-};
-
-// tl;dr there are a ton of ways to construct this
-// standard error attributes end up attached at root level
-// all other options are in .options
-function BetterError(){
   Error.call(this);
 
-  // take in some options
-  this.options = formatOptions(toArray(arguments));
-  if (!this.options) throw new Error('Invalid arguments');
-  this.options = defaults(this.options, defaultOptions);
+  var options = parseOptions(plugin, message, opt);
+  var self = this;
 
-  // absorb in our standard Error class keys
-  absorb(this.options, this, errKeys);
+  // if options has an error, grab details from it
+  if (options.error) {
+    // These properties are not enumerable, so we have to add them explicitly.
+    arrayUniq(Object.keys(options.error).concat(nonEnumberableProperties))
+      .forEach(function(prop) {
+        self[prop] = options.error[prop];
+      });
+  }
 
-  // capture detailed callsite info
-  this.callSites = this.stack ? st.parse(this) : st.get(BetterError);
+  var properties = ['name', 'message', 'fileName', 'lineNumber', 'stack', 'showStack', 'showProperties', 'plugin'];
+
+  // options object can override
+  properties.forEach(function(prop) {
+    if (prop in options) this[prop] = options[prop];
+  }, this);
+
+  // defaults
+  if (!this.name) this.name = 'Error';
+
+  if (!this.stack) {
+    // Error.captureStackTrace appends a stack property which relies on the toString method of the object it is applied to.
+    // Since we are using our own toString method which controls when to display the stack trace if we don't go through this
+    // safety object, then we'll get stack overflow problems.
+    var safety = {
+      toString: function() {
+        return this._messageWithDetails() + '\nStack:';
+      }.bind(this)
+    };
+    Error.captureStackTrace(safety, arguments.callee || this.constructor);
+    this.__safety = safety;
+  }
+
+  if (!this.plugin) throw new Error('Missing plugin name');
+  if (!this.message) throw new Error('Missing error message');
 }
 
-util.inherits(BetterError, Error);
+util.inherits(PluginError, Error);
 
-module.exports = BetterError;
+PluginError.prototype._messageWithDetails = function() {
+  var messageWithDetails = 'Message:\n    ' + this.message;
+  var details = this._messageDetails();
+
+  if (details !== '') {
+    messageWithDetails += '\n' + details;
+  }
+
+  return messageWithDetails;
+};
+
+PluginError.prototype._messageDetails = function() {
+  if (!this.showProperties) {
+    return '';
+  }
+
+  var properties = arrayDiffer(Object.keys(this), propertiesNotToDisplay);
+
+  if (properties.length === 0) {
+    return '';
+  }
+
+  var self = this;
+  properties = properties.map(function stringifyProperty(prop) {
+    return '    ' + prop + ': ' + self[prop];
+  });
+
+  return 'Details:\n' + properties.join('\n');
+};
+
+PluginError.prototype.toString = function () {
+  var sig = chalk.red(this.name) + ' in plugin \'' + chalk.cyan(this.plugin) + '\'';
+  var detailsWithStack = function(stack) {
+    return this._messageWithDetails() + '\nStack:\n' + stack;
+  }.bind(this);
+
+  var msg;
+  if (this.showStack) {
+    if (this.__safety) { // There is no wrapped error, use the stack captured in the PluginError ctor
+      msg = this.__safety.stack;
+    } else if (this._stack) {
+      msg = detailsWithStack(this._stack);
+    } else { // Stack from wrapped error
+      msg = detailsWithStack(this.stack);
+    }
+  } else {
+    msg = this._messageWithDetails();
+  }
+
+  return sig + '\n' + msg;
+};
+
+module.exports = PluginError;
